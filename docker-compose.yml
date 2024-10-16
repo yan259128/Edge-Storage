@@ -1,0 +1,1829 @@
+version: "3.3"
+
+volumes:
+  keys:
+  poet_keys:
+
+networks:
+  mynetwork:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.18.0.0/16  # 设置自定义子网
+
+services:
+
+  # 用来在使用进行poet共识前的validator注册的
+#  poet-lead:
+#    hostname: poet-lead
+#    image: hyperledger/sawtooth-poet-engine:nightly
+#    networks:
+#      mynetwork: {}
+#    volumes:
+#      - keys:/shared_keys
+#      - poet_keys:/poet_keys
+#      - ./sawtooth_pote/scripts/main_poet.sh:/root/start.sh
+#    working_dir: /root
+#    entrypoint: ["bash", "start.sh"]
+
+  validator-0:
+    hostname: validator-0
+    image: hyperledger/sawtooth-validator:chime
+    networks:
+      mynetwork:
+        ipv4_address: 172.18.10.2
+    volumes:
+      - keys:/shared_keys
+      - poet_keys:/poet_keys
+      - ./sawtooth_pote/scripts/main_validator.sh:/root/start.sh
+    expose:
+      - 4004
+      - 8800
+      - 5005
+      - 5050
+    working_dir: /root
+    entrypoint: ["bash", "start.sh"]
+    stop_signal: SIGKILL
+
+  validator-1:
+    hostname: validator-1
+    image: hyperledger/sawtooth-validator:chime
+    networks:
+      mynetwork:
+        ipv4_address: 172.18.10.3
+    volumes:
+      - keys:/shared_keys
+    expose:
+      - 4004
+      - 8800
+      - 5005
+      - 5050
+    command: "bash -c \"\
+        while true; do if [ -e /shared_keys/validator-1.pub ]; then cp /shared_keys/validator-1.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-1.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+        echo $$(cat /etc/sawtooth/keys/validator.pub); \
+        sawtooth-validator -vvv  \
+            --endpoint tcp://validator-1:8800 \
+            --bind component:tcp://eth0:4004 \
+            --bind network:tcp://eth0:8800 \
+            --bind consensus:tcp://eth0:5050 \  
+            --peering static \
+            --scheduler parallel \       
+            --peers tcp://validator-0:8800 \ 
+            --maximum-peer-connectivity 30 \
+            
+    \""
+    stop_signal: SIGKILL
+    depends_on:
+      - validator-0
+
+  validator-2:
+    hostname: validator-2
+    image: hyperledger/sawtooth-validator:chime
+    networks:
+      mynetwork:
+        ipv4_address: 172.18.10.4
+    volumes:
+      - keys:/shared_keys
+    expose:
+      - 4004
+      - 8800
+      - 5005
+      - 5050
+    command: "bash -c \"\
+        while true; do if [ -e /shared_keys/validator-2.pub ]; then cp /shared_keys/validator-2.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-2.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+        echo $$(cat /etc/sawtooth/keys/validator.pub); \
+        sawtooth-validator -vvv  \
+            --endpoint tcp://validator-2:8800 \
+            --bind component:tcp://eth0:4004 \
+            --bind network:tcp://eth0:8800 \
+            --bind consensus:tcp://eth0:5050 \
+            --peering static \
+            --scheduler parallel \
+            --peers tcp://validator-0:8800,tcp://validator-1:8800 \
+            --maximum-peer-connectivity 30 \
+    \""
+    stop_signal: SIGKILL
+    depends_on:
+      - validator-0
+      - validator-1
+
+  validator-3:
+    hostname: validator-3
+    image: hyperledger/sawtooth-validator:chime
+    networks:
+      mynetwork:
+        ipv4_address: 172.18.10.5
+    volumes:
+      - keys:/shared_keys
+    expose:
+      - 4004
+      - 8800
+      - 5005
+      - 5050
+    command: "bash -c \"\
+        while true; do if [ -e /shared_keys/validator-3.pub ]; then cp /shared_keys/validator-3.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-3.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+        echo $$(cat /etc/sawtooth/keys/validator.pub); \
+        sawtooth-validator -vvv \
+            --endpoint tcp://validator-3:8800 \
+            --bind component:tcp://eth0:4004 \
+            --bind network:tcp://eth0:8800 \
+            --bind consensus:tcp://eth0:5050 \
+            --peering static \
+            --scheduler parallel \
+            --peers tcp://validator-0:8800,tcp://validator-1:8800,tcp://validator-2:8800 \
+            --maximum-peer-connectivity 30 \
+    \""
+    stop_signal: SIGKILL
+    depends_on:
+      - validator-0
+      - validator-1
+      - validator-2
+
+#  validator-4:
+#    hostname: validator-4
+#    image: hyperledger/sawtooth-validator:chime
+#    networks:
+#      mynetwork:
+#        ipv4_address: 172.18.10.6
+#    volumes:
+#      - keys:/shared_keys
+#    expose:
+#      - 4004
+#      - 8800
+#      - 5005
+#      - 5050
+#    command: "bash -c \"\
+#          while true; do if [ -e /shared_keys/validator-4.pub ]; then cp /shared_keys/validator-4.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-4.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+#          echo $$(cat /etc/sawtooth/keys/validator.pub); \
+#          sawtooth-validator -vvv \
+#              --endpoint tcp://validator-4:8800 \
+#              --bind component:tcp://eth0:4004 \
+#              --bind network:tcp://eth0:8800 \
+#              --bind consensus:tcp://eth0:5050 \
+#              --peers tcp://validator-0:8800,tcp://validator-1:8800,tcp://validator-2:8800,tcp://validator-3:8800 \
+#              --maximum-peer-connectivity 30 \
+#      \""
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-0
+#      - validator-1
+#      - validator-2
+#      - validator-3
+#
+#  validator-5:
+#    hostname: validator-5
+#    image: hyperledger/sawtooth-validator:chime
+#    networks:
+#      mynetwork:
+#        ipv4_address: 172.18.10.7
+#    volumes:
+#      - keys:/shared_keys
+#    expose:
+#      - 4004
+#      - 8800
+#      - 5005
+#      - 5050
+#    command: "bash -c \"\
+#            while true; do if [ -e /shared_keys/validator-5.pub ]; then cp /shared_keys/validator-5.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-5.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+#            echo $$(cat /etc/sawtooth/keys/validator.pub); \
+#            sawtooth-validator -vvv \
+#                --endpoint tcp://validator-5:8800 \
+#                --bind component:tcp://eth0:4004 \
+#                --bind network:tcp://eth0:8800 \
+#                --bind consensus:tcp://eth0:5050 \
+#                --peers tcp://validator-0:8800,tcp://validator-1:8800,tcp://validator-2:8800,tcp://validator-3:8800,tcp://validator-4:8800 \
+#                --maximum-peer-connectivity 30 \
+#        \""
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-0
+#      - validator-1
+#      - validator-2
+#      - validator-3
+#      - validator-4
+#
+#  validator-6:
+#    hostname: validator-6
+#    image: hyperledger/sawtooth-validator:chime
+#    networks:
+#      mynetwork:
+#        ipv4_address: 172.18.10.8
+#    volumes:
+#      - keys:/shared_keys
+#    expose:
+#      - 4004
+#      - 8800
+#      - 5005
+#      - 5050
+#    command: "bash -c \"\
+#              while true; do if [ -e /shared_keys/validator-6.pub ]; then cp /shared_keys/validator-6.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-6.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+#              echo $$(cat /etc/sawtooth/keys/validator.pub); \
+#              sawtooth-validator -vvv \
+#                  --endpoint tcp://validator-6:8800 \
+#                  --bind component:tcp://eth0:4004 \
+#                  --bind network:tcp://eth0:8800 \
+#                  --bind consensus:tcp://eth0:5050 \
+#                  --peering static \
+#                  --peers tcp://validator-0:8800,tcp://validator-1:8800,tcp://validator-2:8800,tcp://validator-3:8800,tcp://validator-4:8800,tcp://validator-5:8800 \
+#                  --scheduler parallel \
+#                  --maximum-peer-connectivity 30 \
+#          \""
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-0
+#      - validator-1
+#      - validator-2
+#      - validator-3
+#      - validator-4
+#      - validator-5
+#
+#  validator-7:
+#    hostname: validator-7
+#    image: hyperledger/sawtooth-validator:chime
+#    networks:
+#      mynetwork:
+#        ipv4_address: 172.18.10.9
+#    volumes:
+#      - keys:/shared_keys
+#    expose:
+#      - 4004
+#      - 8800
+#      - 5005
+#      - 5050
+#    command: "bash -c \"\
+#                while true; do if [ -e /shared_keys/validator-7.pub ]; then cp /shared_keys/validator-7.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-7.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+#                echo $$(cat /etc/sawtooth/keys/validator.pub); \
+#                sawtooth-validator -vvv \
+#                    --endpoint tcp://validator-7:8800 \
+#                    --bind component:tcp://eth0:4004 \
+#                    --bind network:tcp://eth0:8800 \
+#                    --bind consensus:tcp://eth0:5050 \
+#                    --peering static \
+#                    --peers tcp://validator-0:8800,tcp://validator-1:8800,tcp://validator-2:8800,tcp://validator-3:8800,tcp://validator-4:8800,tcp://validator-5:8800,tcp://validator-6:8800 \
+#                    --scheduler parallel \
+#                    --maximum-peer-connectivity 30 \
+#            \""
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-0
+#      - validator-1
+#      - validator-2
+#      - validator-3
+#      - validator-4
+#      - validator-5
+#      - validator-6
+#
+#  validator-8:
+#    hostname: validator-8
+#    image: hyperledger/sawtooth-validator:chime
+#    networks:
+#      mynetwork:
+#        ipv4_address: 172.18.10.10
+#    volumes:
+#      - keys:/shared_keys
+#    expose:
+#      - 4004
+#      - 8800
+#      - 5005
+#      - 5050
+#    command: "bash -c \"\
+#                  while true; do if [ -e /shared_keys/validator-8.pub ]; then cp /shared_keys/validator-8.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-8.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+#                  echo $$(cat /etc/sawtooth/keys/validator.pub); \
+#                  sawtooth-validator -vvv \
+#                      --endpoint tcp://validator-8:8800 \
+#                      --bind component:tcp://eth0:4004 \
+#                      --bind network:tcp://eth0:8800 \
+#                      --bind consensus:tcp://eth0:5050 \
+#                      --peering static \
+#                      --peers tcp://validator-0:8800,tcp://validator-1:8800,tcp://validator-2:8800,tcp://validator-3:8800,tcp://validator-4:8800,tcp://validator-5:8800,tcp://validator-6:8800,tcp://validator-7:8800 \
+#                      --scheduler parallel \
+#                      --maximum-peer-connectivity 30 \
+#              \""
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-0
+#      - validator-1
+#      - validator-2
+#      - validator-3
+#      - validator-4
+#      - validator-5
+#      - validator-6
+#      - validator-7
+#
+#  validator-9:
+#    hostname: validator-9
+#    image: hyperledger/sawtooth-validator:chime
+#    networks:
+#      mynetwork:
+#        ipv4_address: 172.18.10.11
+#    volumes:
+#      - keys:/shared_keys
+#    expose:
+#      - 4004
+#      - 8800
+#      - 5005
+#      - 5050
+#    command: "bash -c \"\
+#                    while true; do if [ -e /shared_keys/validator-9.pub ]; then cp /shared_keys/validator-9.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-9.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+#                    echo $$(cat /etc/sawtooth/keys/validator.pub); \
+#                    sawtooth-validator -vvv \
+#                        --endpoint tcp://validator-9:8800 \
+#                        --bind component:tcp://eth0:4004 \
+#                        --bind network:tcp://eth0:8800 \
+#                        --bind consensus:tcp://eth0:5050 \
+#                        --peering static \
+#                        --peers tcp://validator-0:8800,tcp://validator-1:8800,tcp://validator-2:8800,tcp://validator-3:8800,tcp://validator-4:8800,tcp://validator-5:8800,tcp://validator-6:8800,tcp://validator-7:8800,tcp://validator-8:8800 \
+#                        --scheduler parallel \
+#                        --maximum-peer-connectivity 30 \
+#                \""
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-0
+#      - validator-1
+#      - validator-2
+#      - validator-3
+#      - validator-4
+#      - validator-5
+#      - validator-6
+#      - validator-7
+#      - validator-8
+#
+#  validator-10:
+#    hostname: validator-10
+#    image: hyperledger/sawtooth-validator:chime
+#    volumes:
+#      - keys:/shared_keys
+#    networks:
+#      mynetwork:
+#        ipv4_address: 172.18.10.12
+#    expose:
+#      - 4004
+#      - 8800
+#      - 5005
+#      - 5050
+#    command: "bash -c \"\
+#                      while true; do if [ -e /shared_keys/validator-10.pub ]; then cp /shared_keys/validator-10.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-10.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+#                      echo $$(cat /etc/sawtooth/keys/validator.pub); \
+#                      sawtooth-validator -vvv \
+#                          --endpoint tcp://validator-10:8800 \
+#                          --bind component:tcp://eth0:4004 \
+#                          --bind network:tcp://eth0:8800 \
+#                          --bind consensus:tcp://eth0:5050 \
+#                          --peering static \
+#                          --peers tcp://validator-0:8800,tcp://validator-1:8800,tcp://validator-2:8800,tcp://validator-3:8800,tcp://validator-4:8800,tcp://validator-5:8800,tcp://validator-6:8800,tcp://validator-7:8800,tcp://validator-8:8800,tcp://validator-9:8800 \
+#                          --scheduler parallel \
+#                          --maximum-peer-connectivity 30 \
+#                  \""
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-0
+#      - validator-1
+#      - validator-2
+#      - validator-3
+#      - validator-4
+#      - validator-5
+#      - validator-6
+#      - validator-7
+#      - validator-9
+#
+#  validator-11:
+#    hostname: validator-11
+#    image: hyperledger/sawtooth-validator:chime
+#    volumes:
+#      - keys:/shared_keys
+#    networks:
+#      mynetwork:
+#        ipv4_address: 172.18.10.13
+#    expose:
+#      - 4004
+#      - 8800
+#      - 5005
+#      - 5050
+#    command: "bash -c \"\
+#                      while true; do if [ -e /shared_keys/validator-11.pub ]; then cp /shared_keys/validator-11.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-11.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+#                      echo $$(cat /etc/sawtooth/keys/validator.pub); \
+#                      sawtooth-validator -vvv \
+#                          --endpoint tcp://validator-11:8800 \
+#                          --bind component:tcp://eth0:4004 \
+#                          --bind network:tcp://eth0:8800 \
+#                          --bind consensus:tcp://eth0:5050 \
+#                          --peering static \
+#                          --peers tcp://validator-0:8800,tcp://validator-1:8800,tcp://validator-2:8800,tcp://validator-3:8800,tcp://validator-4:8800,tcp://validator-5:8800,tcp://validator-6:8800,tcp://validator-7:8800,tcp://validator-8:8800,tcp://validator-9:8800,tcp://validator-10:8800 \
+#                          --scheduler parallel \
+#                          --maximum-peer-connectivity 30 \
+#                  \""
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-0
+#      - validator-1
+#      - validator-2
+#      - validator-3
+#      - validator-4
+#      - validator-5
+#      - validator-6
+#      - validator-7
+#      - validator-9
+#      - validator-10
+
+
+
+
+
+#                      while ! curl -s http://validator-0:8800 > /dev/null || ! curl -s http://validator-1:8800 > /dev/null || ! curl -s http://validator-2:8800 > /dev/null || ! curl -s http://validator-3:8800 > /dev/null || ! curl -s http://validator-4:8800 > /dev/null || ! curl -s http://validator-5:8800 > /dev/null || ! curl -s http://validator-6:8800 > /dev/null || ! curl -s http://validator-7:8800 > /dev/null || ! curl -s http://validator-8:8800 > /dev/null || ! curl -s http://validator-9:8800 > /dev/null; do \
+#                      echo 'Waiting for validator-0 and validator-1...'; sleep 5; \
+#                      done; \
+
+# Devmode 简单的随机选举，官方提供测试用，非正式
+#  devmode-engine:
+#    hostname: devmode-engine
+#    image: hyperledger/sawtooth-devmode-engine:chime
+#    expose:
+#      - 5050
+#    command: devmode-engine-rust -C tcp://validator-0:5050
+#    stop_signal: SIGKILL
+
+
+#   PoET 通过流逝时间进行共识，简单来说就是给每个节点分配一个等待时间，等待时间先结束的作为打包节点。
+  # poet-engine-0:
+  #   hostname: poet-engine-0
+  #   image: hyperledger/sawtooth-poet-engine:nightly
+  #   networks:
+  #     mynetwork: {}
+  #   volumes:
+  #     - keys:/shared_keys
+  #     - poet_keys:/poet_keys
+  #     - ./sawtooth_pote/scripts/main_poet.sh:/root/start.sh
+  #   working_dir: /root
+  #   entrypoint: [ "bash", "start.sh" ]
+  #   stop_signal: SIGKILL
+
+  # poet-tp-0:
+  #   hostname: poet-tp-0
+  #   image: hyperledger/sawtooth-poet-validator-registry-tp:nightly
+  #   networks:
+  #     mynetwork: {}
+  #   volumes:
+  #     - keys:/shared_keys
+  #   command: poet-validator-registry-tp --connect tcp://validator-0:4004 -vv
+  #   stop_signal: SIGKILL
+  #   depends_on:
+  #     - validator-0
+
+  # poet-engine-1:
+  #   hostname: poet-engine-1
+  #   image: hyperledger/sawtooth-poet-engine:nightly
+  #   networks:
+  #     mynetwork: {}
+  #   volumes:
+  #     - keys:/shared_keys
+  #     - poet_keys:/poet_keys
+  #   command: >
+  #     bash -c "
+  #       while true; do
+  #         if [ -e /poet_keys/validator-1.pub ]; then
+  #           cp /poet_keys/validator-1.priv /etc/sawtooth/keys/validator.priv &&
+  #           cp /poet_keys/validator-1.pub /etc/sawtooth/keys/validator.pub;
+  #           break;
+  #         fi;
+  #         sleep 0.5;
+  #       done;
+  #     poet registration create --key /etc/sawtooth/keys/validator.priv -o poet-1.batch;
+  #     cp poet-1.batch /poet_keys/poet-1.batch;
+  #     while true; do
+  #       if [ -e /shared_keys/validator.priv  ]; then
+  #         poet-engine -vv --connect tcp://validator-1:5050
+  #         break;
+  #       fi;
+  #       sleep 1;
+  #     done;
+  #     "
+  #   stop_signal: SIGKILL
+
+  # poet-tp-1:
+  #   hostname: poet-tp-0
+  #   image: hyperledger/sawtooth-poet-validator-registry-tp:nightly
+  #   networks:
+  #     mynetwork: {}
+  #   volumes:
+  #     - keys:/shared_keys
+  #   command: poet-validator-registry-tp --connect tcp://validator-1:4004 -vv
+  #   stop_signal: SIGKILL
+  #   depends_on:
+  #     - validator-1
+
+  # poet-engine-2:
+  #   hostname: poet-engine-2
+  #   image: hyperledger/sawtooth-poet-engine:nightly
+  #   networks:
+  #     mynetwork: {}
+  #   volumes:
+  #     - keys:/shared_keys
+  #     - poet_keys:/poet_keys
+  #   command: >
+  #     bash -c "
+  #       while true; do
+  #         if [ -e /poet_keys/validator-2.pub ]; then
+  #           cp /poet_keys/validator-2.priv /etc/sawtooth/keys/validator.priv &&
+  #           cp /poet_keys/validator-2.pub /etc/sawtooth/keys/validator.pub;
+  #           break;
+  #         fi;
+  #         sleep 0.5;
+  #       done;
+  #     poet registration create --key /etc/sawtooth/keys/validator.priv -o poet-2.batch;
+  #     cp poet-2.batch /poet_keys/poet-2.batch;
+  #     while true; do
+  #       if [ -e /shared_keys/validator.priv  ]; then
+  #         poet-engine -vv --connect tcp://validator-2:5050
+  #         break;
+  #       fi;
+  #       sleep 1;
+  #     done;
+  #     "
+  #   stop_signal: SIGKILL
+
+
+  # poet-tp-2:
+  #   hostname: poet-tp-2
+  #   image: hyperledger/sawtooth-poet-validator-registry-tp:nightly
+  #   networks:
+  #     mynetwork: {}
+  #   volumes:
+  #     - keys:/shared_keys
+  #   command: poet-validator-registry-tp --connect tcp://validator-2:4004 -vv
+  #   stop_signal: SIGKILL
+  #   depends_on:
+  #     - validator-2
+
+  # poet-engine-3:
+  #   hostname: poet-engine-3
+  #   image: hyperledger/sawtooth-poet-engine:nightly
+  #   networks:
+  #     mynetwork: {}
+  #   volumes:
+  #     - keys:/shared_keys
+  #     - poet_keys:/poet_keys
+  #   command: >
+  #     bash -c "
+  #       while true; do
+  #         if [ -e /poet_keys/validator-3.pub ]; then
+  #           cp /poet_keys/validator-3.priv /etc/sawtooth/keys/validator.priv &&
+  #           cp /poet_keys/validator-3.pub /etc/sawtooth/keys/validator.pub;
+  #           break;
+  #         fi;
+  #         sleep 0.5;
+  #       done;
+  #     poet registration create --key /etc/sawtooth/keys/validator.priv -o poet-3.batch;
+  #     cp poet-3.batch /poet_keys/poet-3.batch;
+  #     while true; do
+  #       if [ -e /shared_keys/validator.priv  ]; then
+  #         poet-engine -vv --connect tcp://validator-3:5050
+  #         break;
+  #       fi;
+  #       sleep 1;
+  #     done;
+  #     "
+  #   stop_signal: SIGKILL
+
+  # poet-tp-3:
+  #   hostname: poet-tp-3
+  #   image: hyperledger/sawtooth-poet-validator-registry-tp:nightly
+  #   networks:
+  #     mynetwork: {}
+  #   volumes:
+  #     - keys:/shared_keys
+  #   command: poet-validator-registry-tp --connect tcp://validator-3:4004 -vv
+  #   stop_signal: SIGKILL
+  #   depends_on:
+  #     - validator-3
+
+#  poet-engine-4:
+#    hostname: poet-engine-4
+#    image: hyperledger/sawtooth-poet-engine:nightly
+#    networks:
+#      mynetwork: {}
+#    volumes:
+#      - keys:/shared_keys
+#    command: >
+#      bash -c "
+#        while true; do
+#          if [ -e /shared_keys/validator-4.pub ]; then
+#            cp /shared_keys/validator-4.priv /etc/sawtooth/keys/validator.priv &&
+#            cp /shared_keys/validator-4.pub /etc/sawtooth/keys/validator.pub;
+#            break;
+#          fi;
+#          sleep 0.5;
+#        done;
+#      poet-validator-registry-tp -C tcp://validator-4:4004 -vv
+#      poet-engine -vv --connect tcp://validator-4:5050
+#      "
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-4
+#
+#  poet-tp-4:
+#    hostname: poet-tp-4
+#    image: hyperledger/sawtooth-poet-validator-registry-tp:nightly
+#    volumes:
+#      - keys:/shared_keys
+#    command: poet-validator-registry-tp -C tcp://validator-4:4004 -vv
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-4
+#
+#
+#  poet-engine-5:
+#    hostname: poet-engine-5
+#    image: hyperledger/sawtooth-poet-engine:nightly
+#    volumes:
+#      - keys:/shared_keys
+#    command: >
+#      bash -c "
+#        while true; do
+#          if [ -e /shared_keys/validator-5.pub ]; then
+#            cp /shared_keys/validator-5.priv /etc/sawtooth/keys/validator.priv &&
+#            cp /shared_keys/validator-5.pub /etc/sawtooth/keys/validator.pub;
+#            break;
+#          fi;
+#          sleep 0.5;
+#        done;
+#      poet-engine -vv --connect tcp://validator-5:5050
+#      "
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-5
+#
+#  poet-tp-5:
+#    hostname: poet-tp-5
+#    image: hyperledger/sawtooth-poet-validator-registry-tp:nightly
+#    volumes:
+#      - keys:/shared_keys
+#    command: poet-validator-registry-tp -C tcp://validator-5:4004 -vv
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-5
+#
+#
+#  poet-engine-6:
+#    hostname: poet-engine-6
+#    image: hyperledger/sawtooth-poet-engine:nightly
+#    volumes:
+#      - keys:/shared_keys
+#    command: >
+#      bash -c "
+#        while true; do
+#          if [ -e /shared_keys/validator-6.pub ]; then
+#            cp /shared_keys/validator-6.priv /etc/sawtooth/keys/validator.priv &&
+#            cp /shared_keys/validator-6.pub /etc/sawtooth/keys/validator.pub;
+#            break;
+#          fi;
+#          sleep 0.5;
+#        done;
+#      poet-engine -vv --connect tcp://validator-6:5050
+#      "
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-6
+#
+#  poet-tp-6:
+#    hostname: poet-tp-6
+#    image: hyperledger/sawtooth-poet-validator-registry-tp:nightly
+#    volumes:
+#      - keys:/shared_keys
+#    command: poet-validator-registry-tp -C tcp://validator-6:4004 -vv
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-6
+#
+#
+#  poet-engine-7:
+#    hostname: poet-engine-7
+#    image: hyperledger/sawtooth-poet-engine:nightly
+#    volumes:
+#      - keys:/shared_keys
+#    command: >
+#      bash -c "
+#        while true; do
+#          if [ -e /shared_keys/validator-7.pub ]; then
+#            cp /shared_keys/validator-7.priv /etc/sawtooth/keys/validator.priv &&
+#            cp /shared_keys/validator-7.pub /etc/sawtooth/keys/validator.pub;
+#            break;
+#          fi;
+#          sleep 0.5;
+#        done;
+#      poet-engine -vv --connect tcp://validator-7:5050
+#      "
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-7
+#
+#  poet-tp-7:
+#    hostname: poet-tp-7
+#    image: hyperledger/sawtooth-poet-validator-registry-tp:nightly
+#    volumes:
+#      - keys:/shared_keys
+#    command: poet-validator-registry-tp -C tcp://validator-7:4004 -vv
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-7
+#
+#
+#  poet-engine-8:
+#    hostname: poet-engine-8
+#    image: hyperledger/sawtooth-poet-engine:nightly
+#    volumes:
+#      - keys:/shared_keys
+#    command: >
+#      bash -c "
+#        while true; do
+#          if [ -e /shared_keys/validator-8.pub ]; then
+#            cp /shared_keys/validator-8.priv /etc/sawtooth/keys/validator.priv &&
+#            cp /shared_keys/validator-8.pub /etc/sawtooth/keys/validator.pub;
+#            break;
+#          fi;
+#          sleep 0.5;
+#        done;
+#      poet-engine -vv --connect tcp://validator-8:5050
+#      "
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-8
+#
+#  poet-tp-8:
+#    hostname: poet-tp-8
+#    image: hyperledger/sawtooth-poet-validator-registry-tp:nightly
+#    volumes:
+#      - keys:/shared_keys
+#    command: poet-validator-registry-tp -C tcp://validator-8:4004 -vv
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-8
+#
+#  poet-engine-9:
+#    hostname: poet-engine-9
+#    image: hyperledger/sawtooth-poet-engine:nightly
+#    volumes:
+#      - keys:/shared_keys
+#    command: >
+#      bash -c "
+#        while true; do
+#          if [ -e /shared_keys/validator-9.pub ]; then
+#            cp /shared_keys/validator-9.priv /etc/sawtooth/keys/validator.priv &&
+#            cp /shared_keys/validator-9.pub /etc/sawtooth/keys/validator.pub;
+#            break;
+#          fi;
+#          sleep 0.5;
+#        done;
+#      poet-engine -vv --connect tcp://validator-9:5050
+#      "
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-9
+#
+#  poet-tp-9:
+#    hostname: poet-tp-9
+#    image: hyperledger/sawtooth-poet-validator-registry-tp:nightly
+#    volumes:
+#      - keys:/shared_keys
+#    command: poet-validator-registry-tp -C tcp://validator-9:4004 -vv
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-9
+#
+#cd
+#  poet-engine-10:
+#    hostname: poet-engine-10
+#    image: hyperledger/sawtooth-poet-engine:nightly
+#    volumes:
+#      - keys:/shared_keys
+#    command: >
+#      bash -c "
+#        while true; do
+#          if [ -e /shared_keys/validator-10.pub ]; then
+#            cp /shared_keys/validator-10.priv /etc/sawtooth/keys/validator.priv &&
+#            cp /shared_keys/validator-10.pub /etc/sawtooth/keys/validator.pub;
+#            break;
+#          fi;
+#          sleep 0.5;
+#        done;
+#      poet-engine -vv --connect tcp://validator-10:5050
+#      "
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-10
+#
+#
+#  poet-tp-10:
+#    hostname: poet-tp-10
+#    image: hyperledger/sawtooth-poet-validator-registry-tp:nightly
+#    volumes:
+#      - keys:/shared_keys
+#    command: poet-validator-registry-tp -C tcp://validator-10:4004 -vv
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-10
+
+
+# PBFT 基于拜占庭容错的，原理忘了。
+#  pbft-engine-0:
+#    hostname: pbft-engine-0
+#    image: hyperledger/sawtooth-pbft-engine:chime
+#    networks:
+#      mynetwork: {}
+#    volumes:
+#      - keys:/shared_keys
+#    expose:
+#       - 5050
+#    command: >
+#        bash -c "
+#          while true; do
+#            if [ -e /shared_keys/validator.pub ]; then
+#              mkdir -p /etc/sawtooth/keys/ &&
+#              cp /shared_keys/validator.priv /etc/sawtooth/keys/validator.priv &&
+#              cp /shared_keys/validator.pub /etc/sawtooth/keys/validator.pub;
+#              break;
+#            fi;
+#            sleep 0.5;
+#          done;
+#        RUST_BACKTRACE=full pbft-engine -vv --connect tcp://validator-0:5050
+#        "
+#    stop_signal: SIGKILL
+#    depends_on:
+#       - validator-0
+#
+#  pbft-engine-1:
+#    hostname: pbft-engine-1
+#    image: hyperledger/sawtooth-pbft-engine:chime
+#    networks:
+#      mynetwork: {}
+#    volumes:
+#      - keys:/shared_keys
+#    expose:
+#       - 5050
+#    command: >
+#        bash -c "
+#          while true; do
+#            if [ -e /shared_keys/validator-1.pub ]; then
+#              mkdir -p /etc/sawtooth/keys/ &&
+#              cp /shared_keys/validator-1.priv /etc/sawtooth/keys/validator.priv &&
+#              cp /shared_keys/validator-1.pub /etc/sawtooth/keys/validator.pub;
+#              break;
+#            fi;
+#            sleep 0.5;
+#          done;
+#        pbft-engine -vv --connect tcp://validator-1:5050
+#        "
+#    stop_signal: SIGKILL
+#    depends_on:
+#       - validator-1
+#
+#  pbft-engine-2:
+#    hostname: pbft-engine-2
+#    image: hyperledger/sawtooth-pbft-engine:chime
+#    networks:
+#      mynetwork: {}
+#    volumes:
+#      - keys:/shared_keys
+#    expose:
+#       - 5050
+#    command: >
+#        bash -c "
+#          while true; do
+#            if [ -e /shared_keys/validator-2.pub ]; then
+#              mkdir -p /etc/sawtooth/keys/ &&
+#              cp /shared_keys/validator-2.priv /etc/sawtooth/keys/validator.priv &&
+#              cp /shared_keys/validator-2.pub /etc/sawtooth/keys/validator.pub;
+#              break;
+#            fi;
+#            sleep 0.5;
+#          done;
+#        pbft-engine -vv --connect tcp://validator-2:5050
+#        "
+#    stop_signal: SIGKILL
+#    depends_on:
+#       - validator-2
+#
+#  pbft-engine-3:
+#    hostname: pbft-engine-3
+#    image: hyperledger/sawtooth-pbft-engine:chime
+#    networks:
+#      mynetwork: {}
+#    volumes:
+#      - keys:/shared_keys
+#    expose:
+#       - 5050
+#    command: >
+#        bash -c "
+#          while true; do
+#            if [ -e /shared_keys/validator-3.pub ]; then
+#              mkdir -p /etc/sawtooth/keys/ &&
+#              cp /shared_keys/validator-3.priv /etc/sawtooth/keys/validator.priv &&
+#              cp /shared_keys/validator-3.pub /etc/sawtooth/keys/validator.pub;
+#              break;
+#            fi;
+#            sleep 0.5;
+#          done;
+#        pbft-engine -vv --connect tcp://validator-3:5050
+#        "
+#    stop_signal: SIGKILL
+#    depends_on:
+#       - validator-3
+##
+#  pbft-engine-4:
+#    hostname: pbft-engine-4
+#    image: hyperledger/sawtooth-pbft-engine:chime
+#    networks:
+#      mynetwork: {}
+#    volumes:
+#      - keys:/shared_keys
+#    expose:
+#       - 5050
+#    command: >
+#        bash -c "
+#          while true; do
+#            if [ -e /shared_keys/validator-4.pub ]; then
+#              mkdir -p /etc/sawtooth/keys/ &&
+#              cp /shared_keys/validator-4.priv /etc/sawtooth/keys/validator.priv &&
+#              cp /shared_keys/validator-4.pub /etc/sawtooth/keys/validator.pub;
+#              break;
+#            fi;
+#            sleep 0.5;
+#          done;
+#        pbft-engine -vv --connect tcp://validator-4:5050
+#        "
+#    stop_signal: SIGKILL
+#    depends_on:
+#       - validator-4
+#
+#  pbft-engine-5:
+#    hostname: pbft-engine-5
+#    image: hyperledger/sawtooth-pbft-engine:chime
+#    networks:
+#      mynetwork: {}
+#    volumes:
+#      - keys:/shared_keys
+#    expose:
+#       - 5050
+#    command: >
+#        bash -c "
+#          while true; do
+#            if [ -e /shared_keys/validator-5.pub ]; then
+#              mkdir -p /etc/sawtooth/keys/ &&
+#              cp /shared_keys/validator-5.priv /etc/sawtooth/keys/validator.priv &&
+#              cp /shared_keys/validator-5.pub /etc/sawtooth/keys/validator.pub;
+#              break;
+#            fi;
+#            sleep 0.5;
+#          done;
+#        pbft-engine -vv --connect tcp://validator-5:5050
+#        "
+#    stop_signal: SIGKILL
+#    depends_on:
+#       - validator-5
+##
+#  pbft-engine-6:
+#    hostname: pbft-engine-6
+#    image: hyperledger/sawtooth-pbft-engine:chime
+#    networks:
+#      mynetwork: {}
+#    volumes:
+#      - keys:/shared_keys
+#    expose:
+#       - 5050
+#    command: >
+#        bash -c "
+#          while true; do
+#            if [ -e /shared_keys/validator-6.pub ]; then
+#              mkdir -p /etc/sawtooth/keys/ &&
+#              cp /shared_keys/validator-6.priv /etc/sawtooth/keys/validator.priv &&
+#              cp /shared_keys/validator-6.pub /etc/sawtooth/keys/validator.pub;
+#              break;
+#            fi;
+#            sleep 0.5;
+#          done;
+#        pbft-engine -vv --connect tcp://validator-6:5050
+#        "
+#    stop_signal: SIGKILL
+#    depends_on:
+#       - validator-6
+#
+#  pbft-engine-7:
+#    hostname: pbft-engine-7
+#    image: hyperledger/sawtooth-pbft-engine:chime
+#    networks:
+#      mynetwork: {}
+#    volumes:
+#      - keys:/shared_keys
+#    expose:
+#       - 5050
+#    command: >
+#        bash -c "
+#          while true; do
+#            if [ -e /shared_keys/validator-7.pub ]; then
+#              mkdir -p /etc/sawtooth/keys/ &&
+#              cp /shared_keys/validator-7.priv /etc/sawtooth/keys/validator.priv &&
+#              cp /shared_keys/validator-7.pub /etc/sawtooth/keys/validator.pub;
+#              break;
+#            fi;
+#            sleep 0.5;
+#          done;
+#        pbft-engine -vv --connect tcp://validator-7:5050
+#        "
+#    stop_signal: SIGKILL
+#    depends_on:
+#       - validator-7
+##
+#  pbft-engine-8:
+#    hostname: pbft-engine-8
+#    image: hyperledger/sawtooth-pbft-engine:chime
+#    networks:
+#      mynetwork: {}
+#    volumes:
+#      - keys:/shared_keys
+#    expose:
+#       - 5050
+#    command: >
+#        bash -c "
+#          while true; do
+#            if [ -e /shared_keys/validator-8.pub ]; then
+#              mkdir -p /etc/sawtooth/keys/ &&
+#              cp /shared_keys/validator-8.priv /etc/sawtooth/keys/validator.priv &&
+#              cp /shared_keys/validator-8.pub /etc/sawtooth/keys/validator.pub;
+#              break;
+#            fi;
+#            sleep 0.5;
+#          done;
+#        pbft-engine -vv --connect tcp://validator-8:5050
+#        "
+#    stop_signal: SIGKILL
+#    depends_on:
+#       - validator-8
+#
+#  pbft-engine-9:
+#    hostname: pbft-engine-9
+#    image: hyperledger/sawtooth-pbft-engine:chime
+#    networks:
+#      mynetwork: {}
+#    volumes:
+#      - keys:/shared_keys
+#    expose:
+#       - 5050
+#    command: >
+#        bash -c "
+#          while true; do
+#            if [ -e /shared_keys/validator-9.pub ]; then
+#              mkdir -p /etc/sawtooth/keys/ &&
+#              cp /shared_keys/validator-9.priv /etc/sawtooth/keys/validator.priv &&
+#              cp /shared_keys/validator-9.pub /etc/sawtooth/keys/validator.pub;
+#              break;
+#            fi;
+#            sleep 0.5;
+#          done;
+#        pbft-engine -vv --connect tcp://validator-9:5050
+#        "
+#    stop_signal: SIGKILL
+#    depends_on:
+#       - validator-9
+##
+#  pbft-engine-10:
+#    hostname: pbft-engine-10
+#    image: hyperledger/sawtooth-pbft-engine:chime
+#    networks:
+#      mynetwork: {}
+#    volumes:
+#      - keys:/shared_keys
+#    expose:
+#       - 5050
+#    command: >
+#        bash -c "
+#          while true; do
+#            if [ -e /shared_keys/validator-10.pub ]; then
+#              mkdir -p /etc/sawtooth/keys/ &&
+#              cp /shared_keys/validator-10.priv /etc/sawtooth/keys/validator.priv &&
+#              cp /shared_keys/validator-10.pub /etc/sawtooth/keys/validator.pub;
+#              break;
+#            fi;
+#            sleep 0.5;
+#          done;
+#        pbft-engine -vv --connect tcp://validator-10:5050
+#        "
+#    stop_signal: SIGKILL
+#    depends_on:
+#       - validator-10
+#
+#  pbft-engine-11:
+#    hostname: pbft-engine-11
+#    image: hyperledger/sawtooth-pbft-engine:chime
+#    networks:
+#      mynetwork: {}
+#    volumes:
+#      - keys:/shared_keys
+#    expose:
+#      - 5050
+#    command: >
+#      bash -c "
+#        while true; do
+#          if [ -e /shared_keys/validator-11.pub ]; then
+#            mkdir -p /etc/sawtooth/keys/ &&
+#            cp /shared_keys/validator-11.priv /etc/sawtooth/keys/validator.priv &&
+#            cp /shared_keys/validator-11.pub /etc/sawtooth/keys/validator.pub;
+#            break;
+#          fi;
+#          sleep 0.5;
+#        done;
+#      pbft-engine -vv --connect tcp://validator-11:5050
+#      "
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-11
+
+#  pote 部署共识组件的部分 (该项目的共识机制)
+ pote-0:
+   hostname: pote-0
+   build:
+     context: .
+     dockerfile: Dockerfile
+   networks:
+     mynetwork: {}
+   volumes:
+     - keys:/shared_keys
+   command: "bash -c \"\
+    while true; do if [ -e /shared_keys/validator.pub ]; then cp /shared_keys/validator.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+    python3 ./sawtooth_pote/main.py -vv --connect tcp://validator-0:5050
+  \""
+   stop_signal: SIGKILL
+   depends_on:
+     - validator-0
+
+ pote-1:
+   hostname: pote-1
+   build:
+     context: .
+     dockerfile: Dockerfile
+   networks:
+     mynetwork: {}
+   volumes:
+     - keys:/shared_keys
+   command: "bash -c \"\
+       while true; do if [ -e /shared_keys/validator-1.pub ]; then cp /shared_keys/validator-1.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-1.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+       python3 ./sawtooth_pote/main.py -vv --connect tcp://validator-1:5050
+     \""
+   stop_signal: SIGKILL
+   depends_on:
+     - validator-1
+
+ pote-2:
+   hostname: pote-2
+   build:
+     context: .
+     dockerfile: Dockerfile
+   networks:
+     mynetwork: {}
+   volumes:
+     - keys:/shared_keys
+   command: "bash -c \"\
+       while true; do if [ -e /shared_keys/validator-2.pub ]; then cp /shared_keys/validator-2.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-2.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+       python3 ./sawtooth_pote/main.py -vv --connect tcp://validator-2:5050
+     \""
+   stop_signal: SIGKILL
+   depends_on:
+     - validator-2
+
+ pote-3:
+   hostname: pote-3
+   build:
+     context: .
+     dockerfile: Dockerfile
+   networks:
+     mynetwork: {}
+   volumes:
+     - keys:/shared_keys
+   command: "bash -c \"\
+       while true; do if [ -e /shared_keys/validator-3.pub ]; then cp /shared_keys/validator-3.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-3.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+       python3 ./sawtooth_pote/main.py -vv --connect tcp://validator-3:5050
+     \""
+   stop_signal: SIGKILL
+   depends_on:
+     - validator-3
+
+#  pote-4:
+#    hostname: pote-4
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    volumes:
+#      - keys:/shared_keys
+#    command: "bash -c \"\
+#          while true; do if [ -e /shared_keys/validator-4.pub ]; then cp /shared_keys/validator-4.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-4.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+#          python3 ./sawtooth_pote/main.py -vv --connect tcp://validator-4:5050
+#        \""
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-4
+#
+#  pote-5:
+#    hostname: pote-5
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    volumes:
+#      - keys:/shared_keys
+#    command: "bash -c \"\
+#            while true; do if [ -e /shared_keys/validator-5.pub ]; then cp /shared_keys/validator-5.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-5.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+#            python3 ./sawtooth_pote/main.py -vv --connect tcp://validator-5:5050
+#          \""
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-5
+
+#  pote-6:
+#    hostname: pote-6
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    volumes:
+#      - keys:/shared_keys
+#    command: "bash -c \"\
+#            while true; do if [ -e /shared_keys/validator-6.pub ]; then cp /shared_keys/validator-6.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-6.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+#            python3 ./sawtooth_pote/main.py -vv --connect tcp://validator-6:5050
+#          \""
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-6
+#
+#  pote-7:
+#    hostname: pote-7
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    volumes:
+#      - keys:/shared_keys
+#    command: "bash -c \"\
+#            while true; do if [ -e /shared_keys/validator-7.pub ]; then cp /shared_keys/validator-7.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-7.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+#            python3 ./sawtooth_pote/main.py -vv --connect tcp://validator-7:5050
+#          \""
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-7
+#
+#  pote-8:
+#    hostname: pote-8
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    volumes:
+#      - keys:/shared_keys
+#    command: "bash -c \"\
+#            while true; do if [ -e /shared_keys/validator-8.pub ]; then cp /shared_keys/validator-8.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-8.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+#            python3 ./sawtooth_pote/main.py -vv --connect tcp://validator-8:5050
+#          \""
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-8
+#
+#  pote-9:
+#    hostname: pote-9
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    volumes:
+#      - keys:/shared_keys
+#    command: "bash -c \"\
+#            while true; do if [ -e /shared_keys/validator-9.pub ]; then cp /shared_keys/validator-9.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-9.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+#            python3 ./sawtooth_pote/main.py -vv --connect tcp://validator-9:5050
+#          \""
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-9
+
+#  pote-10:
+#    hostname: pote-10
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    volumes:
+#      - keys:/shared_keys
+#    command: "bash -c \"\
+#            while true; do if [ -e /shared_keys/validator-10.pub ]; then cp /shared_keys/validator-10.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-10.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+#            python3 ./sawtooth_pote/main.py -vv --connect tcp://validator-10:5050
+#          \""
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-10
+#
+#  pote-11:
+#    hostname: pote-11
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    volumes:
+#      - keys:/shared_keys
+#    command: "bash -c \"\
+#            while true; do if [ -e /shared_keys/validator-11.pub ]; then cp /shared_keys/validator-11.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-11.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+#            python3 ./sawtooth_pote/main.py -vv --connect tcp://validator-11:5050
+#          \""
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - validator-11
+
+
+
+
+  rest-api-0:
+    hostname: rest-api-0
+    image: hyperledger/sawtooth-rest-api:chime
+    networks:
+      mynetwork:
+        ipv4_address: 172.18.20.2
+    expose:
+      - 4004
+      - 8008
+    command: sawtooth-rest-api --connect tcp://validator-0:4004 --bind rest-api-0:8008
+    stop_signal: SIGKILL
+
+  rest-api-1:
+    hostname: rest-api-1
+    image: hyperledger/sawtooth-rest-api:chime
+    networks:
+      mynetwork: {}
+    expose:
+      - 4004
+      - 8008
+    command: sawtooth-rest-api --connect tcp://validator-1:4004 --bind rest-api-1:8008
+    stop_signal: SIGKILL
+
+  rest-api-2:
+    hostname: rest-api-2
+    image: hyperledger/sawtooth-rest-api:chime
+    networks:
+      mynetwork: {}
+    expose:
+      - 4004
+      - 8008
+    command: sawtooth-rest-api --connect tcp://validator-2:4004 --bind rest-api-2:8008
+    stop_signal: SIGKILL
+
+  rest-api-3:
+    hostname: rest-api-3
+    image: hyperledger/sawtooth-rest-api:chime
+    networks:
+      mynetwork: {}
+    expose:
+      - 4004
+      - 8008
+    command: sawtooth-rest-api --connect tcp://validator-3:4004 --bind rest-api-3:8008
+    stop_signal: SIGKILL
+
+#  rest-api-4:
+#    hostname: rest-api-4
+#    image: hyperledger/sawtooth-rest-api:chime
+#    networks:
+#      mynetwork: {}
+#    expose:
+#      - 4004
+#      - 8008
+#    command: sawtooth-rest-api --connect tcp://validator-4:4004 --bind rest-api-4:8008
+#    stop_signal: SIGKILL
+#
+#  rest-api-5:
+#    hostname: rest-api-5
+#    image: hyperledger/sawtooth-rest-api:chime
+#    networks:
+#      mynetwork: {}
+#    expose:
+#      - 4004
+#      - 8008
+#    command: sawtooth-rest-api --connect tcp://validator-5:4004 --bind rest-api-5:8008
+#    stop_signal: SIGKILL
+#
+#  rest-api-6:
+#    hostname: rest-api-6
+#    image: hyperledger/sawtooth-rest-api:chime
+#    networks:
+#      mynetwork: {}
+#    expose:
+#      - 4004
+#      - 8008
+#    command: sawtooth-rest-api --connect tcp://validator-6:4004 --bind rest-api-6:8008
+#    stop_signal: SIGKILL
+#
+#  rest-api-7:
+#    hostname: rest-api-7
+#    image: hyperledger/sawtooth-rest-api:chime
+#    networks:
+#      mynetwork: {}
+#    expose:
+#      - 4004
+#      - 8008
+#    command: sawtooth-rest-api --connect tcp://validator-7:4004 --bind rest-api-7:8008
+#    stop_signal: SIGKILL
+##
+#  rest-api-8:
+#    hostname: rest-api-8
+#    image: hyperledger/sawtooth-rest-api:chime
+#    networks:
+#      mynetwork: {}
+#    expose:
+#      - 4004
+#      - 8008
+#    command: sawtooth-rest-api --connect tcp://validator-8:4004 --bind rest-api-8:8008
+#    stop_signal: SIGKILL
+#
+#  rest-api-9:
+#    hostname: rest-api-9
+#    image: hyperledger/sawtooth-rest-api:chime
+#    networks:
+#      mynetwork: {}
+#    expose:
+#      - 4004
+#      - 8008
+#    command: sawtooth-rest-api --connect tcp://validator-9:4004 --bind rest-api-9:8008
+#    stop_signal: SIGKILL
+#
+#  rest-api-10:
+#    hostname: rest-api-10
+#    image: hyperledger/sawtooth-rest-api:chime
+#    networks:
+#      mynetwork: {}
+#    expose:
+#      - 4004
+#      - 8008
+#    command: sawtooth-rest-api --connect tcp://validator-10:4004 --bind rest-api-10:8008
+#    stop_signal: SIGKILL
+#
+#  rest-api-11:
+#    hostname: rest-api-11
+#    image: hyperledger/sawtooth-rest-api:chime
+#    networks:
+#      mynetwork: {}
+#    expose:
+#      - 4004
+#      - 8008
+#    command: sawtooth-rest-api --connect tcp://validator-10:4004 --bind rest-api-10:8008
+#    stop_signal: SIGKILL
+#
+
+
+  settings-tp-0:
+    hostname: settings-tp-0
+    image: hyperledger/sawtooth-settings-tp:chime
+    networks:
+      mynetwork: {}
+    expose:
+      - 4004
+    command: settings-tp -C tcp://validator-0:4004 -vv
+    stop_signal: SIGKILL
+
+  settings-tp-1:
+    hostname: settings-tp-1
+    image: hyperledger/sawtooth-settings-tp:chime
+    networks:
+      mynetwork: {}
+    expose:
+      - 4004
+    command: settings-tp -C tcp://validator-1:4004 -vv
+    stop_signal: SIGKILL
+
+  settings-tp-2:
+    hostname: settings-tp-2
+    image: hyperledger/sawtooth-settings-tp:chime
+    networks:
+      mynetwork: {}
+    expose:
+      - 4004
+    command: settings-tp -C tcp://validator-2:4004 -vv
+    stop_signal: SIGKILL
+
+  settings-tp-3:
+    hostname: settings-tp-3
+    image: hyperledger/sawtooth-settings-tp:chime
+    networks:
+      mynetwork: {}
+    expose:
+      - 4004
+    command: settings-tp -C tcp://validator-3:4004 -vv
+    stop_signal: SIGKILL
+
+#  settings-tp-4:
+#    hostname: settings-tp-4
+#    image: hyperledger/sawtooth-settings-tp:chime
+#    networks:
+#      mynetwork: {}
+#    expose:
+#      - 4004
+#    command: settings-tp -C tcp://validator-4:4004 -vv
+#    stop_signal: SIGKILL
+#
+#  settings-tp-5:
+#    hostname: settings-tp-5
+#    image: hyperledger/sawtooth-settings-tp:chime
+#    networks:
+#      mynetwork: {}
+#    expose:
+#      - 4004
+#    command: settings-tp -C tcp://validator-5:4004 -vv
+#    stop_signal: SIGKILL
+#
+#  settings-tp-6:
+#    hostname: settings-tp-6
+#    networks:
+#      mynetwork: {}
+#    image: hyperledger/sawtooth-settings-tp:chime
+#    expose:
+#      - 4004
+#    command: settings-tp -C tcp://validator-6:4004 -vv
+#    stop_signal: SIGKILL
+#
+#  settings-tp-7:
+#    hostname: settings-tp-7
+#    networks:
+#      mynetwork: {}
+#    image: hyperledger/sawtooth-settings-tp:chime
+#    expose:
+#      - 4004
+#    command: settings-tp -C tcp://validator-7:4004 -vv
+#    stop_signal: SIGKILL
+##
+#  settings-tp-8:
+#    hostname: settings-tp-8
+#    image: hyperledger/sawtooth-settings-tp:chime
+#    networks:
+#      mynetwork: {}
+#    expose:
+#      - 4004
+#    command: settings-tp -C tcp://validator-8:4004 -vv
+#    stop_signal: SIGKILL
+#
+#  settings-tp-9:
+#    hostname: settings-tp-9
+#    image: hyperledger/sawtooth-settings-tp:chime
+#    networks:
+#      mynetwork: {}
+#    expose:
+#      - 4004
+#    command: settings-tp -C tcp://validator-9:4004 -vv
+#    stop_signal: SIGKILL
+#
+#  settings-tp-10:
+#    hostname: settings-tp-10
+#    image: hyperledger/sawtooth-settings-tp:chime
+#    networks:
+#      mynetwork: {}
+#    expose:
+#      - 4004
+#    command: settings-tp -C tcp://validator-10:4004 -vv
+#    stop_signal: SIGKILL
+#
+#  settings-tp-11:
+#    hostname: settings-tp-11
+#    image: hyperledger/sawtooth-settings-tp:chime
+#    networks:
+#      mynetwork: {}
+#    expose:
+#      - 4004
+#    command: settings-tp -C tcp://validator-11:4004 -vv
+#    stop_signal: SIGKILL
+
+
+
+
+# 负责运行交易处理器的节点
+  es-tp-0:
+    hostname: es-tp-0
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      mynetwork: {}
+    volumes:
+      - keys:/shared_keys
+    command: "bash -c \"\
+     while true; do if [ -e /shared_keys/validator.pub ]; then cp /shared_keys/validator.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+     getent hosts rest-api-0 | awk '{ print $$1 }' > /project/rest-api-url.txt; \
+     echo \"node0\" >> username.txt; \
+      intkey-tp-python -v --connect tcp://validator-0:4004
+   \""
+    stop_signal: SIGKILL
+    depends_on:
+      - settings-tp-0
+
+  es-tp-1:
+    hostname: es-tp-1
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      mynetwork: {}
+    volumes:
+      - keys:/shared_keys
+    command: "bash -c \"\
+     while true; do if [ -e /shared_keys/validator-1.pub ]; then cp /shared_keys/validator-1.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-1.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+     while true; do if [ -e /shared_keys/node1.pub ]; then cp /shared_keys/node1.priv /root/.sawtooth/keys/node1.priv && cp /shared_keys/node1.pub /root/.sawtooth/keys/node1.pub; break; fi; sleep 0.5; done; \
+     getent hosts rest-api-1 | awk '{ print $$1 }' > /project/rest-api-url.txt; \
+     echo \"node1\" >> username.txt; \
+     intkey-tp-python -v --connect tcp://validator-1:4004
+    \""
+    stop_signal: SIGKILL
+    depends_on:
+      - settings-tp-1
+
+  es-tp-2:
+    hostname: es-tp-2
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      mynetwork: {}
+    volumes:
+      - keys:/shared_keys
+    command: "bash -c \"\
+     while true; do if [ -e /shared_keys/validator-2.pub ]; then cp /shared_keys/validator-2.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-2.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+     while true; do if [ -e /shared_keys/node2.pub ]; then cp /shared_keys/node2.priv /root/.sawtooth/keys/node2.priv && cp /shared_keys/node2.pub /root/.sawtooth/keys/node2.pub; break; fi; sleep 0.5; done; \
+     getent hosts rest-api-2 | awk '{ print $$1 }' > /project/rest-api-url.txt; \
+     echo \"node2\" >> username.txt; \
+     intkey-tp-python -v --connect tcp://validator-2:4004
+    \""
+    stop_signal: SIGKILL
+    depends_on:
+      - settings-tp-2
+
+  es-tp-3:
+    hostname: es-tp-3
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      mynetwork: {}
+    volumes:
+      - keys:/shared_keys
+    command: "bash -c \"\
+     while true; do if [ -e /shared_keys/validator-3.pub ]; then cp /shared_keys/validator-3.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-3.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+     while true; do if [ -e /shared_keys/node3.pub ]; then cp /shared_keys/node3.priv /root/.sawtooth/keys/node3.priv && cp /shared_keys/node3.pub /root/.sawtooth/keys/node3.pub; break; fi; sleep 0.5; done; \
+     getent hosts rest-api-3 | awk '{ print $$1 }' > /project/rest-api-url.txt; \
+     echo \"node3\" >> username.txt; \
+     intkey-tp-python -v --connect tcp://validator-3:4004
+    \""
+    stop_signal: SIGKILL
+    depends_on:
+      - settings-tp-3
+
+#  es-tp-4:
+#    hostname: es-tp-4
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    volumes:
+#      - keys:/shared_keys
+#    networks:
+#      mynetwork: {}
+#    command: "bash -c \"\
+#     while true; do if [ -e /shared_keys/validator-4.pub ]; then cp /shared_keys/validator-4.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-4.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+#     while true; do if [ -e /shared_keys/node4.pub ]; then cp /shared_keys/node4.priv /root/.sawtooth/keys/node4.priv && cp /shared_keys/node4.pub /root/.sawtooth/keys/node4.pub; break; fi; sleep 0.5; done; \
+#     getent hosts rest-api-4 | awk '{ print $$1 }' > /project/rest-api-url.txt; \
+#     echo \"node4\" >> username.txt; \
+#     intkey-tp-python -v --connect tcp://validator-4:4004
+#    \""
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - settings-tp-4
+#
+#  es-tp-5:
+#    hostname: es-tp-5
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    volumes:
+#      - keys:/shared_keys
+#    networks:
+#      mynetwork: {}
+#    command: "bash -c \"\
+#     while true; do if [ -e /shared_keys/validator-5.pub ]; then cp /shared_keys/validator-5.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-5.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+#     while true; do if [ -e /shared_keys/node5.pub ]; then cp /shared_keys/node5.priv /root/.sawtooth/keys/node5.priv && cp /shared_keys/node5.pub /root/.sawtooth/keys/node5.pub; break; fi; sleep 0.5; done; \
+#     getent hosts rest-api-5 | awk '{ print $$1 }' > /project/rest-api-url.txt; \
+#     echo \"node5\" >> username.txt; \
+#     intkey-tp-python -v --connect tcp://validator-5:4004
+#    \""
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - settings-tp-5
+
+#  es-tp-6:
+#    hostname: es-tp-6
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    networks:
+#      mynetwork: {}
+#    volumes:
+#      - keys:/shared_keys
+#    command: "bash -c \"\
+#     while true; do if [ -e /shared_keys/validator-6.pub ]; then cp /shared_keys/validator-6.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-6.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+#     while true; do if [ -e /shared_keys/node6.pub ]; then cp /shared_keys/node6.priv /root/.sawtooth/keys/node6.priv && cp /shared_keys/node6.pub /root/.sawtooth/keys/node6.pub; break; fi; sleep 0.5; done; \
+#     getent hosts rest-api-6 | awk '{ print $$1 }' > /project/rest-api-url.txt; \
+#     echo \"node6\" >> username.txt; \
+#     intkey-tp-python -v --connect tcp://validator-6:4004
+#    \""
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - settings-tp-6
+#
+#  es-tp-7:
+#    hostname: es-tp-7
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    networks:
+#      mynetwork: {}
+#    volumes:
+#      - keys:/shared_keys
+#    command: "bash -c \"\
+#     while true; do if [ -e /shared_keys/validator-7.pub ]; then cp /shared_keys/validator-7.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-7.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+#     while true; do if [ -e /shared_keys/node7.pub ]; then cp /shared_keys/node7.priv /root/.sawtooth/keys/node7.priv && cp /shared_keys/node7.pub /root/.sawtooth/keys/node7.pub; break; fi; sleep 0.5; done; \
+#     getent hosts rest-api-7 | awk '{ print $$1 }' > /project/rest-api-url.txt; \
+#     echo \"node7\" >> username.txt; \
+#     intkey-tp-python -v --connect tcp://validator-7:4004
+#    \""
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - settings-tp-7
+##
+#  es-tp-8:
+#    hostname: es-tp-8
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    networks:
+#      mynetwork: {}
+#    volumes:
+#      - keys:/shared_keys
+#    command: "bash -c \"\
+#     while true; do if [ -e /shared_keys/validator-8.pub ]; then cp /shared_keys/validator-8.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-8.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+#     while true; do if [ -e /shared_keys/node8.pub ]; then cp /shared_keys/node8.priv /root/.sawtooth/keys/node8.priv && cp /shared_keys/node8.pub /root/.sawtooth/keys/node8.pub; break; fi; sleep 0.5; done; \
+#     getent hosts rest-api-8 | awk '{ print $$1 }' > /project/rest-api-url.txt; \
+#     echo \"node8\" >> username.txt; \
+#      intkey-tp-python -v --connect tcp://validator-8:4004
+#    \""
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - settings-tp-8
+#
+#  es-tp-9:
+#    hostname: es-tp-9
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    networks:
+#      mynetwork: {}
+#    volumes:
+#      - keys:/shared_keys
+#    command: "bash -c \"\
+#     while true; do if [ -e /shared_keys/validator-9.pub ]; then cp /shared_keys/validator-9.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-9.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+#     while true; do if [ -e /shared_keys/node9.pub ]; then cp /shared_keys/node9.priv /root/.sawtooth/keys/node9.priv && cp /shared_keys/node9.pub /root/.sawtooth/keys/node9.pub; break; fi; sleep 0.5; done; \
+#     getent hosts rest-api-9 | awk '{ print $$1 }' > /project/rest-api-url.txt; \
+#     echo \"node9\" >> username.txt; \
+#      intkey-tp-python -v --connect tcp://validator-9:4004
+#   \""
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - settings-tp-9
+#
+#  es-tp-10:
+#    hostname: es-tp-10
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    networks:
+#      mynetwork: {}
+#    volumes:
+#      - keys:/shared_keys
+#    command: "bash -c \"\
+#     while true; do if [ -e /shared_keys/validator-10.pub ]; then cp /shared_keys/validator-10.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-10.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+#     while true; do if [ -e /shared_keys/node10.pub ]; then cp /shared_keys/node10.priv /root/.sawtooth/keys/node10.priv && cp /shared_keys/node10.pub /root/.sawtooth/keys/node10.pub; break; fi; sleep 0.5; done; \
+#     getent hosts rest-api-10 | awk '{ print $$1 }' > /project/rest-api-url.txt; \
+#     echo \"node10\" >> username.txt; \
+#    intkey-tp-python -v --connect tcp://validator-10:4004
+#   \""
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - settings-tp-10
+#
+#  es-tp-11:
+#    hostname: es-tp-11
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    networks:
+#      mynetwork: {}
+#    volumes:
+#      - keys:/shared_keys
+#    command: "bash -c \"\
+#     while true; do if [ -e /shared_keys/validator-11.pub ]; then cp /shared_keys/validator-11.priv /etc/sawtooth/keys/validator.priv && cp /shared_keys/validator-11.pub /etc/sawtooth/keys/validator.pub; break; fi; sleep 0.5; done; \
+#     while true; do if [ -e /shared_keys/node11.pub ]; then cp /shared_keys/node11.priv /root/.sawtooth/keys/node11.priv && cp /shared_keys/node11.pub /root/.sawtooth/keys/node11.pub; break; fi; sleep 0.5; done; \
+#     getent hosts rest-api-10 | awk '{ print $$1 }' > /project/rest-api-url.txt; \
+#     echo \"node10\" >> username.txt; \
+#    intkey-tp-python -v --connect tcp://validator-11:4004
+#   \""
+#    stop_signal: SIGKILL
+#    depends_on:
+#      - settings-tp-11
+
+

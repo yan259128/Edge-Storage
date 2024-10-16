@@ -1,0 +1,32 @@
+=============== Oct 12, 2024 (UTC) ===============
+08:34:18.129529 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+08:34:18.201264 db@open opening
+08:34:18.220357 version@stat F·[] S·0B[] Sc·[]
+08:34:18.238634 db@janitor F·2 G·0
+08:34:18.239713 db@open done T·37.329397ms
+08:34:18.577972 db@close closing
+08:34:18.583160 db@close done T·5.186174ms
+=============== Oct 12, 2024 (UTC) ===============
+08:34:33.655090 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+08:34:33.671901 version@stat F·[] S·0B[] Sc·[]
+08:34:33.673344 db@open opening
+08:34:33.677385 journal@recovery F·1
+08:34:33.681212 journal@recovery recovering @1
+08:34:33.695688 memdb@flush created L0@2 N·42 S·3KiB "\x1d,\xcc..X`a,v17":"\xf5\x90\"..\x9a\xd7S,v14"
+08:34:33.703178 version@stat F·[1] S·3KiB[3KiB] Sc·[0.25]
+08:34:33.757603 db@janitor F·3 G·0
+08:34:33.758348 db@open done T·84.412276ms
+08:35:46.786789 db@close closing
+08:35:46.908101 db@close done T·121.300066ms
+=============== Oct 12, 2024 (UTC) ===============
+08:36:01.029140 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+08:36:01.235493 version@stat F·[1] S·3KiB[3KiB] Sc·[0.25]
+08:36:01.241877 db@open opening
+08:36:01.268230 journal@recovery F·1
+08:36:01.289230 journal@recovery recovering @3
+08:36:01.389337 memdb@flush created L0@5 N·23 S·1KiB "Dat..ion,v45":"unc..own,v63"
+08:36:01.409635 version@stat F·[2] S·4KiB[4KiB] Sc·[0.50]
+08:36:01.663616 db@janitor F·4 G·0
+08:36:01.665767 db@open done T·422.039862ms
+10:52:09.214531 db@close closing
+10:52:09.226150 db@close done T·11.640392ms

@@ -1,0 +1,49 @@
+{
+    "config": {
+        "chainId": 1234,
+        "homesteadBlock": 0,
+        "eip150Block": 0,
+        "eip155Block": 0,
+        "eip158Block": 0
+    },
+    "difficulty": "0x20000",
+    "gasLimit": "8000000000",
+    "alloc": {
+        "647aeaf41ca3cfd84f55bc2944c8c3332fad2c80": {
+            "balance": "1000000000000000000000"
+        },
+        "767b63292abc85e3e3238200428fbbe3049bf491": {
+            "balance": "1000000000000000000000"
+        },
+        "b16fae0c97e3d9e6e0837b16bf859fcd6267c51f": {
+            "balance": "1000000000000000000000"
+        },
+        "c42cc0e20a8021d2df7ceef877c9fb99829c64de": {
+            "balance": "1000000000000000000000"
+        },
+        "d6e41e24ab68f9ec162cc7860f95d7ce71df6717": {
+            "balance": "1000000000000000000000"
+        },
+        "824d4951d3897267eb5f9fc97624be4118e067a6": {
+            "balance": "1000000000000000000000"
+        },
+        "38fcb152f064162cfd3db0b3fd829c7d9ee43071": {
+            "balance": "1000000000000000000000"
+        },
+        "f403093623f75630c895b3a67195145efceea8eb": {
+            "balance": "1000000000000000000000"
+        },
+        "caa307b848adbafaad2b43bc3b625ddfe5adef9c": {
+            "balance": "1000000000000000000000"
+        },
+        "fab64d8a52e77f1b3ae04c760e78c3e41e2746d8": {
+            "balance": "1000000000000000000000"
+        },
+        "58457d358ad7df5fd3fb98c1e64d2e9e2bd1fc2b": {
+            "balance": "1000000000000000000000"
+        },
+        "64a6675a2bc99294bf49bec60d74e72e404d90bd": {
+            "balance": "1000000000000000000000"
+        }
+    }
+}

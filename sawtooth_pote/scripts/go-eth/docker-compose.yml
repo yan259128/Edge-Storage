@@ -1,0 +1,151 @@
+version: '3.3'
+
+services:
+  geth-node1:
+    image: ethereum/client-go:v1.10.25
+    container_name: geth-node1
+    volumes:
+      - ./node1:/root/.ethereum
+    networks:
+      - geth-network
+    ports:
+      - "8545:8545"  # HTTP接口端口
+      - "30303:30303"  # P2P端口
+    command: --http --http.addr "0.0.0.0" --http.api "eth,net,web3,miner,admin" --mine --miner.threads=1 --networkid 1234 --http.corsdomain "*" --allow-insecure-unlock --nodiscover --ipcdisable
+
+  geth-node2:
+    image: ethereum/client-go:v1.10.25
+    container_name: geth-node2
+    volumes:
+      - ./node2:/root/.ethereum
+    networks:
+      - geth-network
+    ports:
+      - "8546:8545"  # HTTP接口端口
+      - "30304:30303"  # P2P端口
+    command: --http --http.addr "0.0.0.0" --http.api "eth,net,web3,miner,admin" --mine --miner.threads=1 --networkid 1234 --http.corsdomain "*" --allow-insecure-unlock --nodiscover --ipcdisable
+
+  geth-node3:
+    image: ethereum/client-go:v1.10.25
+    container_name: geth-node3
+    volumes:
+      - ./node3:/root/.ethereum
+    networks:
+      - geth-network
+    ports:
+      - "8547:8545"  # HTTP接口端口
+      - "30305:30303"  # P2P端口
+    command: --http --http.addr "0.0.0.0" --http.api "eth,net,web3,miner,admin" --mine --miner.threads=1 --networkid 1234 --http.corsdomain "*" --allow-insecure-unlock --nodiscover --ipcdisable
+
+  geth-node4:
+    image: ethereum/client-go:v1.10.25
+    container_name: geth-node4
+    volumes:
+      - ./node4:/root/.ethereum
+    networks:
+      - geth-network
+    ports:
+      - "8548:8545"  # HTTP接口端口
+      - "30306:30303"  # P2P端口
+    command: --http --http.addr "0.0.0.0" --http.api "eth,net,web3,miner,admin" --mine --miner.threads=1 --networkid 1234 --http.corsdomain "*" --allow-insecure-unlock --nodiscover --ipcdisable
+
+  geth-node5:
+    image: ethereum/client-go:v1.10.25
+    container_name: geth-node5
+    volumes:
+      - ./node5:/root/.ethereum
+    networks:
+      - geth-network
+    ports:
+      - "8549:8545"  # HTTP接口端口
+      - "30307:30303"  # P2P端口
+    command: --http --http.addr "0.0.0.0" --http.api "eth,net,web3,miner,admin" --mine --miner.threads=1 --networkid 1234 --http.corsdomain "*" --allow-insecure-unlock --nodiscover --ipcdisable
+
+  geth-node6:
+    image: ethereum/client-go:v1.10.25
+    container_name: geth-node6
+    volumes:
+      - ./node6:/root/.ethereum
+    networks:
+      - geth-network
+    ports:
+      - "8550:8545"  # HTTP接口端口
+      - "30308:30303"  # P2P端口
+    command: --http --http.addr "0.0.0.0" --http.api "eth,net,web3,miner,admin" --mine --miner.threads=1 --networkid 1234 --http.corsdomain "*" --allow-insecure-unlock --nodiscover --ipcdisable
+
+  geth-node7:
+    image: ethereum/client-go:v1.10.25
+    container_name: geth-node7
+    volumes:
+      - ./node7:/root/.ethereum
+    networks:
+      - geth-network
+    ports:
+      - "8551:8545"  # HTTP接口端口
+      - "30309:30303"  # P2P端口
+    command: --http --http.addr "0.0.0.0" --http.api "eth,net,web3,miner,admin" --mine --miner.threads=1 --networkid 1234 --http.corsdomain "*" --allow-insecure-unlock --nodiscover --ipcdisable
+
+  geth-node8:
+    image: ethereum/client-go:v1.10.25
+    container_name: geth-node8
+    volumes:
+      - ./node8:/root/.ethereum
+    networks:
+      - geth-network
+    ports:
+      - "8552:8545"  # HTTP接口端口
+      - "30310:30303"  # P2P端口
+    command: --http --http.addr "0.0.0.0" --http.api "eth,net,web3,miner,admin" --mine --miner.threads=1 --networkid 1234 --http.corsdomain "*" --allow-insecure-unlock --nodiscover --ipcdisable
+
+  geth-node9:
+    image: ethereum/client-go:v1.10.25
+    container_name: geth-node9
+    volumes:
+      - ./node9:/root/.ethereum
+    networks:
+      - geth-network
+    ports:
+      - "8553:8545"  # HTTP接口端口
+      - "30311:30303"  # P2P端口
+    command: --http --http.addr "0.0.0.0" --http.api "eth,net,web3,miner,admin" --mine --miner.threads=1 --networkid 1234 --http.corsdomain "*" --allow-insecure-unlock --nodiscover --ipcdisable
+
+  geth-node10:
+    image: ethereum/client-go:v1.10.25
+    container_name: geth-node10
+    volumes:
+      - ./node10:/root/.ethereum
+    networks:
+      - geth-network
+    ports:
+      - "8554:8545"  # HTTP接口端口
+      - "30312:30303"  # P2P端口
+    command: --http --http.addr "0.0.0.0" --http.api "eth,net,web3,miner,admin" --mine --miner.threads=1 --networkid 1234 --http.corsdomain "*" --allow-insecure-unlock --nodiscover --ipcdisable
+
+  geth-node11:
+    image: ethereum/client-go:v1.10.25
+    container_name: geth-node11
+    volumes:
+      - ./node11:/root/.ethereum
+    networks:
+      - geth-network
+    ports:
+      - "8555:8545"  # HTTP接口端口
+      - "30313:30303"  # P2P端口
+    command: --http --http.addr "0.0.0.0" --http.api "eth,net,web3,miner,admin" --mine --miner.threads=1 --networkid 1234 --http.corsdomain "*" --allow-insecure-unlock --nodiscover --ipcdisable
+
+  geth-node12:
+    image: ethereum/client-go:v1.10.25
+    container_name: geth-node12
+    volumes:
+      - ./node12:/root/.ethereum
+    networks:
+      - geth-network
+    ports:
+      - "8556:8545"  # HTTP接口端口
+      - "30314:30303"  # P2P端口
+    command: --http --http.addr "0.0.0.0" --http.api "eth,net,web3,miner,admin" --mine --miner.threads=1 --networkid 1234 --http.corsdomain "*" --allow-insecure-unlock --nodiscover --ipcdisable
+
+
+networks:
+  geth-network:
+    driver: bridge
